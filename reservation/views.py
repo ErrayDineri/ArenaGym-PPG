@@ -1,23 +1,37 @@
-from rest_framework import viewsets
-from .models import User,Moderator, Court,Reservation,Payment
-from .serializers import UserSerializer,ModeratorSerializer,CourtSerializer,ReservationSerializer,PaymentSerializer
+from django.shortcuts import render, redirect
+from .forms import UserRegistrationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login, logout
+from django.shortcuts import render, redirect
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+def registerPage(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+    else:
+        form = UserRegistrationForm()
+        
+    return render(request, 'register.html', {'form': form})
 
-class ModeratorViewSet(viewsets.ModelViewSet):
-    queryset = Moderator.objects.all()
-    serializer_class = ModeratorSerializer
+def loginPage(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')  # or wherever you want to redirect
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, 'login.html', {'form': form})
 
-class CourtViewSet(viewsets.ModelViewSet):
-    queryset = Court.objects.all()
-    serializer_class = CourtSerializer
+@login_required(login_url='login')
+def homePage(request):
+    return render(request, 'home.html')
 
-class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.all()
-    serializer_class = ReservationSerializer
-
-class PaymentViewSet(viewsets.ModelViewSet):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
+def logoutPage(request):
+    logout(request)
+    return redirect('login')

@@ -3,9 +3,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     isCoach = models.BooleanField(default=False)
-
-class Moderator(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    isModerator = models.BooleanField(default=False)
 
 class Court(models.Model):
     id = models.IntegerField(primary_key=True)

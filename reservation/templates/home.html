@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px auto;
+            max-width: 600px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logout-form {
+            display: inline;
+        }
+        button {
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Welcome, {{ user.username }}!</h2>
+
+        <form method="POST" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+
+    <p>This is your home page. Customize it as you wish!</p>
+
+</body>
+</html>

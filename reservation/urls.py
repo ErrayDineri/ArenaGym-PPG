@@ -1,9 +1,10 @@
-from rest_framework import routers
-from .views import UserViewSet, ModeratorViewSet, CourtViewSet, ReservationViewSet, PaymentViewSet
-router=routers.DefaultRouter()
-router.register(r'users', UserViewSet, basename='user')
-router.register(r'moderators', ModeratorViewSet, basename='moderator')
-router.register(r'courts', CourtViewSet, basename='court')
-router.register(r'reservations', ReservationViewSet, basename='reservation')
-router.register(r'payments', PaymentViewSet, basename='payment')
-urlpatterns = router.urls
+from django.urls import path
+from . import views
+from django.contrib.auth import views as auth_views
+
+urlpatterns = [
+    path('register/', views.registerPage, name='register'),
+    path('login/', views.loginPage, name='login'),
+    path('', views.homePage, name='home'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout')
+]
