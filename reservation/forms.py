@@ -95,10 +95,14 @@ class BookingForm(forms.ModelForm):
         queryset=Court.objects.filter(isAvailable=True),
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+    payment_method = forms.ChoiceField(
+        choices=[('Cash', 'Cash'), ('Online', 'Online')],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
 
     class Meta:
         model = Reservation
-        fields = ['date', 'startTime', 'endTime', 'court', 'coach']
+        fields = ['date', 'startTime', 'endTime', 'court', 'coach', 'payment_method']
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -120,6 +124,7 @@ class BookingForm(forms.ModelForm):
         end_time = cleaned_data.get('endTime')
         court = cleaned_data.get('court')
         coach = cleaned_data.get('coach')
+        payment_method = cleaned_data.get('payment_method')
 
         # Check if the court is available for the selected date and time
         if Reservation.objects.filter(court=court, date=date, startTime__lt=end_time, endTime__gt=start_time).exists():
@@ -129,5 +134,8 @@ class BookingForm(forms.ModelForm):
         if coach and Reservation.objects.filter(coach=coach, date=date, startTime__lt=end_time, endTime__gt=start_time).exists():
             self.add_error('coach', 'The selected coach is already booked during this time.')
 
-        return cleaned_data
+        # If online payment is selected, ensure it's handled later (integration with payment provider)
+        if payment_method == 'Online':
+            pass  # Add payment gateway logic here
 
+        return cleaned_data
