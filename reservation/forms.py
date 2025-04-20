@@ -10,7 +10,7 @@ class UserRegistrationForm(UserCreationForm):
     )
     email = forms.EmailField(
         label="Email",
-        widget=forms.EmailInput(attrs={'placeholder': 'Email'})
+        widget=forms.EmailInput(attrs={'placeholder': 'example@example.org'})
     )
     password1 = forms.CharField(
         label="Password",
@@ -19,7 +19,7 @@ class UserRegistrationForm(UserCreationForm):
     )
     password2 = forms.CharField(
         label="Confirm Password",
-        widget=forms.PasswordInput(attrs={'placeholder': 'Confirm Password'}),
+        widget=forms.PasswordInput(attrs={'placeholder': 'Password Again'}),
         help_text=None
     )
     isCoach = forms.BooleanField(
