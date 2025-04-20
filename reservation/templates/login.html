@@ -20,6 +20,9 @@
         <h3 class="text-center mb-4">Login</h3>
         <form method="POST">
             {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
             {% for field in form %}
                 <div class="mb-3">
                     <label class="form-label">{{ field.label }}</label>
@@ -31,6 +34,7 @@
             {% endfor %}
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
+        
         <p class="mt-3 text-center">
             Don't have an account? <a href="{% url 'register' %}">Register</a>
         </p>

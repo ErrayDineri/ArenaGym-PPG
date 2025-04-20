@@ -17,16 +17,24 @@ def registerPage(request):
     return render(request, 'register.html', {'form': form})
 
 def loginPage(request):
+    next_url = request.GET.get('next')  # ?next=/booking/
+
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect('home')  # or wherever you want to redirect
+
+            # Redirect to 'next' if exists, otherwise home
+            return redirect(request.POST.get('next') or 'home')
     else:
         form = AuthenticationForm()
-    
-    return render(request, 'login.html', {'form': form})
+
+    return render(request, 'login.html', {
+        'form': form,
+        'next': next_url  # Pass it to the template
+    })
+
 
 def homePage(request):
     return render(request, 'home.html')
