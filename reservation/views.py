@@ -28,7 +28,6 @@ def loginPage(request):
     
     return render(request, 'login.html', {'form': form})
 
-@login_required(login_url='login')
 def homePage(request):
     return render(request, 'home.html')
 
