@@ -34,3 +34,17 @@ def homePage(request):
 def logoutPage(request):
     logout(request)
     return redirect('login')
+
+@login_required
+def bookingPage(request):
+    if request.method == 'POST':
+        form = BookingForm(request.POST, user=request.user)
+        if form.is_valid():
+            reservation = form.save(commit=False)
+            reservation.user = request.user
+            reservation.save()
+            return redirect('home')
+    else:
+        form = BookingForm(user=request.user)
+
+    return render(request, 'booking.html', {'form': form})
