@@ -98,7 +98,7 @@
             </a>
         {% else %}
             <p class="lead">You are logged in as a <strong class="text-primary">Client</strong>.</p>
-            <a href="#" class="btn btn-primary btn-lg mt-3">
+            <a href="{% url 'booking' %}" class="btn btn-primary btn-lg mt-3">
                 <i class="fas fa-calendar-check me-2"></i>Book a Court Now
             </a>
         {% endif %}
