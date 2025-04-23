@@ -8,5 +8,6 @@ urlpatterns = [
     path('', views.homePage, name='home'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     path('booking/', views.bookingPage, name='booking'),
-    
+    path('client/', views.clientPage, name='client'),
+    path('booking/<int:court_id>/', views.bookingPage, name='booking_with_id'),  # new
 ]

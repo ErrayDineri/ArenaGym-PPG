@@ -71,14 +71,14 @@
                     <p class="lead mb-0">Manage your padel reservations and find coaches</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="#" class="btn btn-primary btn-lg">
+                    <a href="{% url 'booking' %}" class="btn btn-primary btn-lg">
                         <i class="fas fa-calendar-plus me-2"></i>New Booking
                     </a>
                 </div>
             </div>
         </div>
 
- <!-- In the Quick Actions section -->
+<!-- In the Quick Actions section -->
 <div class="row mb-5">
     <div class="col-md-4 mb-3">
         <div class="card h-100">
@@ -160,8 +160,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card court-card h-100">
                     <img src="https://via.placeholder.com/300x200?text=Padel+Court+{{ court.id }}" 
-                         class="card-img-top" 
-                         alt="Court {{ court.id }}">
+                        class="card-img-top" 
+                        alt="Court {{ court.id }}">
                     <div class="card-body">
                         <h5 class="card-title">Court {{ court.id }}</h5>
                         <p class="card-text">{{ court.description|default:"Standard padel court" }}</p>
@@ -172,7 +172,7 @@
                             </span>
                         </div>
                         <div class="d-grid gap-2">
-                            <a href="{% url 'book_court' court.id %}" class="btn btn-primary">Book Now</a>
+                            <a href="{% url 'booking_with_id' court.id %}" class="btn btn-primary">Book Now</a>
                             <a href="#" class="btn btn-outline-secondary">View Schedule</a>
                         </div>
                     </div>

@@ -12,14 +12,14 @@
 <div class="d-flex justify-content-center align-items-center vh-100">
     <div class="card shadow p-4 w-100" style="max-width: 500px;">
         <h3 class="text-center mb-4">Register</h3>
-        <form method="POST">
+        <form method="POST" novalidate>
             {% csrf_token %}
             {% for field in form %}
-                <div class="mb-3">
+                <div class="mb-3" id="div_{{ field.name }}">
                     {% if field.field.widget.input_type == "checkbox" %}
                         <div class="form-check">
-                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
+                            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                         </div>
                     {% else %}
                         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -37,6 +37,26 @@
         </p>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const isCoachCheckbox = document.getElementById('id_isCoach');
+        const rateDiv = document.getElementById('div_rate');
+
+        function toggleRateVisibility() {
+            if (isCoachCheckbox.checked) {
+                rateDiv.style.display = 'block';
+            } else {
+                rateDiv.style.display = 'none';
+            }
+        }
+
+        if (isCoachCheckbox && rateDiv) {
+            toggleRateVisibility();
+            isCoachCheckbox.addEventListener('change', toggleRateVisibility);
+        }
+    });
+</script>
 
 </body>
 </html>

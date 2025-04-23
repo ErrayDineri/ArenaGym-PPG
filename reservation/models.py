@@ -4,11 +4,11 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     isCoach = models.BooleanField(default=False)
     isModerator = models.BooleanField(default=False)
+    rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
 
 class Court(models.Model):
     id = models.IntegerField(primary_key=True)
     inDoor = models.BooleanField(default=True)
-    isAvailable = models.BooleanField(default=True)
     description = models.TextField(blank=True)
 
 class Reservation(models.Model):
@@ -20,9 +20,4 @@ class Reservation(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     isPaid = models.BooleanField(default=False)
     court = models.ForeignKey(Court, on_delete=models.CASCADE)
-
-class Payment(models.Model):
-    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=6, decimal_places=2)
-    paymentDate = models.DateTimeField(auto_now_add=True)
-    paymentMethod = models.CharField(max_length=50)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=120)
