@@ -13,7 +13,7 @@ def registerPage(request):
             user = form.save(commit=False)
             if form.cleaned_data.get('isCoach'):
                 user.isCoach = True
-                user.tariff = 120  # Default tariff if Coach
+                user.rate = 120  # Default rate if Coach
             user.save()
             return redirect('login')
     else:
@@ -67,7 +67,7 @@ def bookingPage(request, court_id=None):
             num_people = form.cleaned_data.get('num_people')
 
             if coach:
-                total_price = coach.tariff if coach.tariff else 120
+                total_price = coach.rate if coach.rate else 120
             if booking_duration == '1h':  # Adjusting price for 1 hour booking
                 total_price /= 2
             if num_people == 2:  # Adjusting price if there are 2 people

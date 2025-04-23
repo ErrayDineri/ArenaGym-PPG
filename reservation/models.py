@@ -11,6 +11,9 @@ class Court(models.Model):
     inDoor = models.BooleanField(default=True)
     description = models.TextField(blank=True)
 
+    def __str__(self):
+        return f"Court {self.id} - {'Indoor' if self.inDoor else 'Outdoor'}"
+
 class Reservation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     coach = models.ForeignKey(User, on_delete=models.CASCADE, related_name='coach', null=True, blank=True)

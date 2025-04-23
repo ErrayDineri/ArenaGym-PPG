@@ -196,7 +196,7 @@ class BookingForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.isCoach = self.cleaned_data.get('isCoach', False)
-        user.tariff = self.cleaned_data.get('tariff') if user.isCoach else 0.00
+        user.rate = self.cleaned_data.get('rate') if user.isCoach else 0.00
         if commit:
             user.save()
         return user

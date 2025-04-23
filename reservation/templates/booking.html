@@ -79,14 +79,14 @@
             var coachSelected = $(this).val() !== "";
             $('#coach-options').toggle(coachSelected);
 
-            // Get coach's tariff if a coach is selected
+            // Get coach's rate if a coach is selected
             if (coachSelected) {
-                var coachTariff = parseFloat($('#id_coach option:selected').data('tariff'));
+                var coachrate = parseFloat($('#id_coach option:selected').data('rate'));
                 var duration = $('input[name="booking_duration"]:checked').val();
                 var numPeople = $('select[name="num_people"]').val();
                 
                 // Adjust total price based on booking duration and number of people
-                var totalPrice = coachTariff;
+                var totalPrice = coachrate;
                 if (duration === '1h') {
                     totalPrice /= 2; // Example: Half price for 1 hour
                 }
@@ -106,11 +106,11 @@
         $('input[name="booking_duration"], select[name="num_people"]').change(function () {
             var coachSelected = $('#id_coach').val() !== "";
             if (coachSelected) {
-                var coachTariff = parseFloat($('#id_coach option:selected').data('tariff'));
+                var coachrate = parseFloat($('#id_coach option:selected').data('rate'));
                 var duration = $('input[name="booking_duration"]:checked').val();
                 var numPeople = $('select[name="num_people"]').val();
                 
-                var totalPrice = coachTariff;
+                var totalPrice = coachrate;
                 if (duration === '1h') {
                     totalPrice /= 2;
                 }
