@@ -5,7 +5,88 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
 from .models import Court, Reservation, User
 from django.utils import timezone
+from datetime import timedelta
 
+@login_required
+def coach_dashboard(request):
+    if not request.user.isCoach:
+        return redirect('client')
+    
+    # Today's sessions
+    today = timezone.now().date()
+    todays_sessions = Reservation.objects.filter(
+        coach=request.user,
+        date=today
+    ).order_by('startTime')
+    
+    # Upcoming sessions (next 7 days)
+    upcoming_sessions = Reservation.objects.filter(
+        coach=request.user,
+        date__range=[today, today + timedelta(days=7)]
+    ).exclude(date=today).order_by('date', 'startTime')
+    
+    # Calculate earnings (assuming you have a price field in Reservation)
+    total_earnings = sum(
+        session.total_price for session in 
+        Reservation.objects.filter(
+            coach=request.user,
+            date__month=timezone.now().month,
+            isPaid=True
+        )
+    )
+    
+    # Get unique students
+    student_ids = Reservation.objects.filter(
+        coach=request.user
+    ).values_list('user', flat=True).distinct()
+    students = User.objects.filter(id__in=student_ids)
+    
+    context = {
+        'todays_sessions': todays_sessions,
+        'upcoming_sessions': upcoming_sessions,
+        'total_earnings': total_earnings,
+        'student_count': students.count(),
+        'session_count': todays_sessions.count() + upcoming_sessions.count(),
+    }
+    return render(request, 'coachdashboard.html', context)
+
+@login_required
+def coach_sessions(request):
+    if not request.user.isCoach:
+        return redirect('client')
+    
+    sessions = Reservation.objects.filter(
+        coach=request.user,
+        date__gte=timezone.now().date()
+    ).order_by('date', 'startTime')
+    
+    return render(request, 'coachsessions.html', {'sessions': sessions})
+
+@login_required
+def coach_students(request):
+    if not request.user.isCoach:
+        return redirect('client')
+    
+    # Get unique students who have booked with this coach
+    student_ids = Reservation.objects.filter(
+        coach=request.user
+    ).values_list('user', flat=True).distinct()
+    students = User.objects.filter(id__in=student_ids)
+    
+    return render(request, 'coach_students.html', {'students': students})
+
+@login_required
+def session_detail(request, session_id):
+    session = get_object_or_404(Reservation, id=session_id, coach=request.user)
+    return render(request, 'session_detail.html', {'session': session})
+
+@login_required
+def cancel_session(request, session_id):
+    session = get_object_or_404(Reservation, id=session_id, coach=request.user)
+    if request.method == 'POST':
+        session.delete()
+        return redirect('coach_dashboard')
+    return render(request, 'confirm_cancel.html', {'session': session})
 def registerPage(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
