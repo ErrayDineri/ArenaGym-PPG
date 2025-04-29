@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard - ArenaGYM Padel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .court-card {
+            transition: transform 0.3s ease;
+        }
+        .court-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .availability-badge {
+            font-size: 0.8rem;
+        }
+        .profile-header {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-calendar-day me-2"></i>
+            Session Details
+        </h1>
+        <a href="{% url 'coach_sessions' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i> Back to Sessions
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="mb-3">Session Information</h4>
+                    <dl class="row">
+                        <dt class="col-sm-4">Date:</dt>
+                        <dd class="col-sm-8">{{ session.date|date:"F j, Y" }}</dd>
+                        
+                        <dt class="col-sm-4">Time:</dt>
+                        <dd class="col-sm-8">{{ session.startTime|time:"H:i" }} - {{ session.endTime|time:"H:i" }}</dd>
+                        
+                        <dt class="col-sm-4">Duration:</dt>
+                        <dd class="col-sm-8">{{ session.get_duration }} hours</dd>
+                        
+                        <dt class="col-sm-4">Court:</dt>
+                        <dd class="col-sm-8">Court {{ session.court.id }} ({% if session.court.inDoor %}Indoor{% else %}Outdoor{% endif %})</dd>
+                    </dl>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4 class="mb-3">Student Information</h4>
+                    <dl class="row">
+                        <dt class="col-sm-4">Name:</dt>
+                        <dd class="col-sm-8">{{ session.user.get_full_name|default:session.user.username }}</dd>
+                        
+                        <dt class="col-sm-4">Contact:</dt>
+                        <dd class="col-sm-8">{{ session.user.email }}</dd>
+                        
+                        <dt class="col-sm-4">Skill Level:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info">Intermediate</span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h4 class="mb-3">Payment Details</h4>
+                    <dl class="row">
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{% if session.isPaid %}success{% else %}warning{% endif %}">
+                                {% if session.isPaid %}Paid{% else %}Pending{% endif %}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Amount:</dt>
+                        <dd class="col-sm-8">${{ session.total_price }}</dd>
+                        
+                        <dt class="col-sm-4">Created:</dt>
+                        <dd class="col-sm-8">{{ session.createdAt|date:"M j, Y H:i" }}</dd>
+                    </dl>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="d-grid gap-2">
+                        {% if not session.isPaid %}
+                        <button class="btn btn-success mb-2">
+                            <i class="fas fa-check-circle me-2"></i> Mark as Paid
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'cancel_session' session.id %}" class="btn btn-danger">
+                            <i class="fas fa-times-circle me-2"></i> Cancel Session
+                        </a>
+                        
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-envelope me-2"></i> Contact Student
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
