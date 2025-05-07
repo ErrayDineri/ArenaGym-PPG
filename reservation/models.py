@@ -13,7 +13,22 @@ class Court(models.Model):
 
     def __str__(self):
         return f"Court {self.id} - {'Indoor' if self.inDoor else 'Outdoor'}"
-
+    def get_booked_slots(self):
+        """Returns booked slots in FullCalendar event format"""
+        events = []
+        for reservation in self.reservation_set.all():
+            events.append({
+                'title': f"Booked - {reservation.user.username}",
+                'start': f"{reservation.date.isoformat()}T{reservation.startTime.strftime('%H:%M:%S')}",
+                'end': f"{reservation.date.isoformat()}T{reservation.endTime.strftime('%H:%M:%S')}",
+                'color': '#dc3545',
+                'extendedProps': {
+                    'type': 'booking',
+                    'reservation_id': reservation.id
+                }
+            })
+        return events
+    
 class Reservation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     coach = models.ForeignKey(User, on_delete=models.CASCADE, related_name='coach', null=True, blank=True)

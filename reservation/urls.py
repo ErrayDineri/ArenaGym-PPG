@@ -16,7 +16,7 @@ urlpatterns = [
     path('coach/sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('coach/sessions/<int:session_id>/cancel/', views.cancel_session, name='cancel_session'),
     path('coach/students/', views.coach_students, name='coach_students'),
-
+    path('api/availability/', views.availability_api, name='availability_api'),
 
 
 ]
