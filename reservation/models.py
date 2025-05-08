@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     isCoach = models.BooleanField(default=False)
     isModerator = models.BooleanField(default=False)
-    rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, null=True, blank=True)
 
 class Court(models.Model):
     id = models.IntegerField(primary_key=True)

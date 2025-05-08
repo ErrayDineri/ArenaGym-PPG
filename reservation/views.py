@@ -87,6 +87,8 @@ def cancel_session(request, session_id):
         session.delete()
         return redirect('coach_dashboard')
     return render(request, 'confirm_cancel.html', {'session': session})
+
+
 def registerPage(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
