@@ -5,7 +5,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout
 from .models import Court, Reservation, User
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
+from django.http import JsonResponse
+from django.contrib import messages
 
 @login_required
 def coach_dashboard(request):
