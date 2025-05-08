@@ -132,42 +132,51 @@ def logoutPage(request):
 
 @login_required
 def bookingPage(request, court_id=None):
-    total_price = 120  # Default price without coach
-
     if request.method == 'POST':
         form = BookingForm(request.POST, user=request.user)
         if form.is_valid():
             reservation = form.save(commit=False)
             reservation.user = request.user
-
-            # Set the reservation times
-            reservation.startTime = form.cleaned_data['startTime']
-            reservation.endTime = form.cleaned_data['endTime']
-
-            # Calculate total price if a coach is selected
+            
+            # Calculate price
             coach = form.cleaned_data.get('coach')
-            booking_duration = form.cleaned_data.get('booking_duration')
-            num_people = form.cleaned_data.get('num_people')
-
-            if coach:
-                total_price = coach.rate if coach.rate else 120
-            if booking_duration == '1h':  # Adjusting price for 1 hour booking
-                total_price /= 2
-            if num_people == 2:  # Adjusting price if there are 2 people
-                total_price *= 2
-
-            reservation.total_price = total_price  # Assuming you have this field in the Reservation model
+            duration = (datetime.combine(reservation.date, reservation.endTime) - 
+                       datetime.combine(reservation.date, reservation.startTime)).total_seconds() / 3600
+            reservation.total_price = duration * (coach.rate if coach else 60)  # Default rate
+            
             reservation.save()
-
-            # Redirect to the home page after saving
-            return redirect('home')
+            messages.success(request, "Reservation created successfully!")
+            return redirect('client_dashboard')
     else:
         form = BookingForm(user=request.user)
         if court_id:
             form.fields['court'].initial = court_id
+    
+    # Get available courts and coaches
+    courts = Court.objects.all()
+    coaches = User.objects.filter(isCoach=True)
+    
+    return render(request, 'booking.html', {
+        'form': form,
+        'courts': courts,
+        'coaches': coaches
+    })
 
-    return render(request, 'booking.html', {'form': form, 'total_price': total_price})
-
+def availability_api(request):
+    coach_id = request.GET.get('coach_id')
+    court_id = request.GET.get('court_id')
+    
+    events = []
+    
+    if coach_id:
+        coach = User.objects.get(id=coach_id, isCoach=True)
+        events.extend(coach.get_availability_schedule())
+    
+    if court_id:
+        court = Court.objects.get(id=court_id)
+        events.extend(court.get_booked_slots())
+    
+    return JsonResponse(events, safe=False)
 
 @login_required
 def clientPage(request):

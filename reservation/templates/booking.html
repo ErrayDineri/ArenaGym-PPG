@@ -11,119 +11,178 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">Arena GYM</a>
-        <div class="d-flex">
-            <form method="POST" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button class="btn btn-outline-light" type="submit">Logout</button>
-            </form>
+    <div class="container py-4">
+        <h1 class="mb-4">Book a Session</h1>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Availability Calendar</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="calendar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0"><i class="fas fa-cog me-2"></i>Booking Options</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="bookingForm">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Selected Slot:</label>
+                                <div id="selectedSlot" class="alert alert-info">
+                                    Please select a time slot on the calendar
+                                </div>
+                                <input type="hidden" name="date" id="selectedDate">
+                                <input type="hidden" name="start_time" id="selectedStartTime">
+                                <input type="hidden" name="end_time" id="selectedEndTime">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="courtSelect" class="form-label">Court</label>
+                                <select class="form-select" id="courtSelect" name="court" required>
+                                    <option value="">Select a court</option>
+                                    {% for court in courts %}
+                                    <option value="{{ court.id }}">Court {{ court.id }} ({% if court.inDoor %}Indoor{% else %}Outdoor{% endif %})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="coachSelect" class="form-label">Coach (Optional)</label>
+                                <select class="form-select" id="coachSelect" name="coach">
+                                    <option value="">No coach</option>
+                                    {% for coach in coaches %}
+                                    <option value="{{ coach.id }}" data-rate="{{ coach.rate }}">
+                                        {{ coach.get_full_name }} (${{ coach.rate }}/h)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Duration</label>
+                                <div class="form-control" id="durationDisplay">1 hour</div>
+                                <input type="hidden" name="duration" value="1" id="durationInput">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Total Price</label>
+                                <div class="form-control" id="priceDisplay">$0.00</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="bookButton" disabled>
+                                <i class="fas fa-calendar-check me-2"></i> Book Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</nav>
-
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Book a Court</h2>
-
-    <div class="card p-4 mx-auto shadow" style="max-width: 600px;">
-        <form method="POST">
-            {% csrf_token %}
-            {% for field in form %}
-                <div class="mb-3" id="field-{{ field.name }}"  {% if field.name == 'booking_duration' or field.name == 'num_people' %} style="display: none;" {% endif %}>
-                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field|add_class:"form-control" }}
-                    {% for error in field.errors %}
-                        <div class="text-danger small">{{ error }}</div>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-
-            <!-- Only show these fields if a coach is selected -->
-            <div id="coach-options" style="display: none;">
-                <div class="mb-3">
-                    <label class="form-label" for="{{ form.booking_duration.id_for_label }}">Booking Duration</label>
-                    {{ form.booking_duration }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="{{ form.num_people.id_for_label }}">Number of People</label>
-                    {{ form.num_people }}
-                </div>
-            </div>
-
-            <!-- Display Total Price and Confirm Reservation Button on the Same Line -->
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <label class="form-label mb-0">Total Price</label>
-                <div id="total-price" class="form-control-plaintext mb-0">
-                    {{ total_price }} DT
-                </div>
-                <button class="btn btn-primary" type="submit">Confirm Reservation</button>
-            </div>
-
-        </form>
-    </div>
-</div>
-
-<script>
-    $(document).ready(function () {
-        // Set initial total price
-        var initialPrice = "{{ total_price|default:'120' }}";
-        $('#total-price').text(initialPrice + " DT");
-
-        // Check if a coach is pre-selected
-        var coachSelected = $('#id_coach').val() !== "";
-        $('#coach-options').toggle(coachSelected);
-
-        // Handle coach selection
-        $('#id_coach').change(function () {
-            var coachSelected = $(this).val() !== "";
-            $('#coach-options').toggle(coachSelected);
-
-            // Get coach's rate if a coach is selected
-            if (coachSelected) {
-                var coachrate = parseFloat($('#id_coach option:selected').data('rate'));
-                var duration = $('input[name="booking_duration"]:checked').val();
-                var numPeople = $('select[name="num_people"]').val();
+    
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            slotMinTime: '08:00:00',
+            slotMaxTime: '22:00:00',
+            slotDuration: '00:30:00',
+            selectable: true,
+            selectMirror: true,
+            select: function(info) {
+                // Handle time slot selection
+                const start = info.start;
+                const end = info.end;
+                const duration = (end - start) / (1000 * 60 * 60); // in hours
                 
-                // Adjust total price based on booking duration and number of people
-                var totalPrice = coachrate;
-                if (duration === '1h') {
-                    totalPrice /= 2; // Example: Half price for 1 hour
+                if (duration < 0.5 || duration > 3) {
+                    alert('Please select a time slot between 30 minutes and 3 hours');
+                    calendar.unselect();
+                    return;
                 }
-
-                if (numPeople == 2) {
-                    totalPrice *= 2; // Double the price if there are 2 people
+                
+                document.getElementById('selectedDate').value = start.toISOString().split('T')[0];
+                document.getElementById('selectedStartTime').value = start.toTimeString().substring(0, 5);
+                document.getElementById('selectedEndTime').value = end.toTimeString().substring(0, 5);
+                document.getElementById('durationInput').value = duration;
+                document.getElementById('durationDisplay').textContent = `${duration} hours`;
+                
+                updatePrice();
+                checkAvailability();
+                
+                document.getElementById('selectedSlot').innerHTML = `
+                    <strong>Date:</strong> ${start.toLocaleDateString()}<br>
+                    <strong>Time:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                    ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>
+                    <strong>Duration:</strong> ${duration} hours
+                `;
+                
+                calendar.unselect();
+            },
+            events: function(fetchInfo, successCallback, failureCallback) {
+                const courtId = document.getElementById('courtSelect').value;
+                const coachId = document.getElementById('coachSelect').value;
+                
+                if (!courtId && !coachId) {
+                    successCallback([]);
+                    return;
                 }
-
-                $('#total-price').text(totalPrice + " DT");
-            } else {
-                // Reset to default price if no coach is selected
-                $('#total-price').text('120 DT');
+                
+                fetch(`/api/availability/?court_id=${courtId}&coach_id=${coachId}&start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`)
+                    .then(response => response.json())
+                    .then(data => successCallback(data))
+                    .catch(error => failureCallback(error));
             }
         });
-
-        // Handle booking duration and number of people changes
-        $('input[name="booking_duration"], select[name="num_people"]').change(function () {
-            var coachSelected = $('#id_coach').val() !== "";
-            if (coachSelected) {
-                var coachrate = parseFloat($('#id_coach option:selected').data('rate'));
-                var duration = $('input[name="booking_duration"]:checked').val();
-                var numPeople = $('select[name="num_people"]').val();
-                
-                var totalPrice = coachrate;
-                if (duration === '1h') {
-                    totalPrice /= 2;
-                }
-
-                if (numPeople == 2) {
-                    totalPrice *= 2;
-                }
-
-                $('#total-price').text(totalPrice + " DT");
-            }
+        
+        calendar.render();
+        
+        // Update calendar when court or coach selection changes
+        document.getElementById('courtSelect').addEventListener('change', function() {
+            calendar.refetchEvents();
+            checkAvailability();
         });
+        
+        document.getElementById('coachSelect').addEventListener('change', function() {
+            calendar.refetchEvents();
+            updatePrice();
+            checkAvailability();
+        });
+        
+        function updatePrice() {
+            const coachSelect = document.getElementById('coachSelect');
+            const duration = parseFloat(document.getElementById('durationInput').value);
+            const rate = coachSelect.selectedOptions[0]?.dataset.rate || 0;
+            const price = (duration * rate).toFixed(2);
+            
+            document.getElementById('priceDisplay').textContent = `$${price}`;
+        }
+        
+        function checkAvailability() {
+            const hasDate = document.getElementById('selectedDate').value !== '';
+            const hasCourt = document.getElementById('courtSelect').value !== '';
+            
+            document.getElementById('bookButton').disabled = !(hasDate && hasCourt);
+        }
     });
-</script>
-
-</body>
-</html>
+    </script>
