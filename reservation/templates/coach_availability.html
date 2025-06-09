@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card mb-4">
+        <div class="card-body bg-primary text-white rounded">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-calendar-alt me-2"></i>Manage Your Availability</h1>
+                    <p class="lead mb-0">Set when you're available to train clients</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{% url 'coachdashboard' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Add Availability Form -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add Availability</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'coach_availability' %}">
+                        {% csrf_token %}
+                        
+                        <!-- One-time / Recurring switch -->
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring" 
+                                  onchange="toggleAvailabilityType()">
+                            <label class="form-check-label" for="is_recurring">
+                                Recurring Weekly Availability
+                            </label>
+                        </div>
+
+                        <!-- One-time slot selection -->
+                        <div id="one_time_fields">
+                            <div class="mb-3">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="date" name="date" 
+                                      min="{{ today|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Recurring slot selection -->
+                        <div id="recurring_fields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="day_of_week" class="form-label">Day of Week</label>
+                                <select class="form-select" id="day_of_week" name="day_of_week">
+                                    <option value="0">Monday</option>
+                                    <option value="1">Tuesday</option>
+                                    <option value="2">Wednesday</option>
+                                    <option value="3">Thursday</option>
+                                    <option value="4">Friday</option>
+                                    <option value="5">Saturday</option>
+                                    <option value="6">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Time selection - common for both types -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_time" class="form-label">Start Time</label>
+                                <select class="form-select" id="start_time" name="start_time" required>
+                                    {% for hour in hours %}
+                                    <option value="{{ hour }}:00">{{ hour }}:00</option>
+                                    <option value="{{ hour }}:30">{{ hour }}:30</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_time" class="form-label">End Time</label>
+                                <select class="form-select" id="end_time" name="end_time" required>
+                                    {% for hour in hours %}
+                                    <option value="{{ hour }}:00">{{ hour }}:00</option>
+                                    <option value="{{ hour }}:30">{{ hour }}:30</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Add Availability</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Calendar View -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Your Availability</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+            
+            <!-- Availability Table -->
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Availability Slots</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Day/Date</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for slot in availability_slots %}
+                            <tr>
+                                <td>
+                                    {% if slot.is_recurring %}
+                                    <span class="badge bg-info">Recurring</span>
+                                    {% else %}
+                                    <span class="badge bg-success">One-time</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if slot.is_recurring %}
+                                        {{ slot.get_day_of_week_display }}
+                                    {% else %}
+                                        {{ slot.date|date:"M d, Y" }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ slot.start_time|time:"g:i A" }} - {{ slot.end_time|time:"g:i A" }}</td>                                <td>
+                                    <form method="post" action="{% url 'delete_availability' availability_id=slot.id %}" 
+                                         style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No availability slots set yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include FullCalendar -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            slotMinTime: '06:00:00',
+            slotMaxTime: '22:00:00',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            events: '{% url "coach_availability_api" %}',            eventClick: function(info) {
+                // Handle event click - could show details or allow editing
+                if (info.event.extendedProps.type === 'availability') {
+                    if (confirm('Do you want to remove this availability slot?')) {
+                        window.location.href = '/coach/availability/' + info.event.extendedProps.availability_id + '/delete/';
+                    }
+                } else if (info.event.extendedProps.type === 'booking') {
+                    // Can't delete bookings here, just show info
+                    alert('This is a booked session');
+                }
+            }
+        });
+        calendar.render();
+    });
+
+    function toggleAvailabilityType() {
+        var isRecurring = document.getElementById('is_recurring').checked;
+        document.getElementById('one_time_fields').style.display = isRecurring ? 'none' : 'block';
+        document.getElementById('recurring_fields').style.display = isRecurring ? 'block' : 'none';
+        
+        // Update required attributes
+        document.getElementById('date').required = !isRecurring;
+        document.getElementById('day_of_week').required = isRecurring;
+    }
+</script>
+{% endblock %}

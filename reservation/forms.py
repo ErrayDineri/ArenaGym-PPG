@@ -1,10 +1,11 @@
 from .utils import generate_time_slots
-from .models import User, Reservation, Court
+from .models import User, Reservation, Court, CoachAvailability
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from django.utils import timezone
 from django.forms.widgets import MultiWidget, Select
 import datetime
+from decimal import Decimal
 
 class TimeSelectWidget(MultiWidget):
     def __init__(self, attrs=None):
@@ -180,24 +181,54 @@ class BookingForm(forms.ModelForm):
             startTime__lt=end_time,
             endTime__gt=start_time
         ).exists():
-            self.add_error('court', 'The selected court is already reserved during this time.')
-
-        # Check if the coach is available during the chosen time
-        if coach and Reservation.objects.filter(
-            coach=coach,
-            date=date,
-            startTime__lt=end_time,
-            endTime__gt=start_time
-        ).exists():
-            self.add_error('coach', 'The selected coach is already booked during this time.')
+            self.add_error('court', 'The selected court is already reserved during this time.')        # Check if the coach is available during the chosen time
+        if coach:
+            # First check if coach has any availability for this time slot
+            coach_is_available = False
+            if CoachAvailability.objects.filter(coach=coach).exists():
+                for availability in CoachAvailability.objects.filter(coach=coach):
+                    if availability.is_available(date, start_time, end_time):
+                        coach_is_available = True
+                        break
+                
+                if not coach_is_available:
+                    self.add_error('coach', 'The selected coach is not available during this time.')
+            else:
+                self.add_error('coach', 'The selected coach has not set their availability yet.')
+            
+            # Then check for booking conflicts
+            if Reservation.objects.filter(
+                coach=coach,
+                date=date,
+                startTime__lt=end_time,
+                endTime__gt=start_time            ).exists():
+                self.add_error('coach', 'The selected coach is already booked during this time.')
 
         return cleaned_data
 
     def save(self, commit=True):
-        user = super().save(commit=False)
-        user.isCoach = self.cleaned_data.get('isCoach', False)
-        user.rate = self.cleaned_data.get('rate') if user.isCoach else 0.00
+        reservation = super().save(commit=False)
+        reservation.startTime = self.cleaned_data.get('startTime')
+        reservation.endTime = self.cleaned_data.get('endTime')
+
+        coach = self.cleaned_data.get('coach')
+        if coach:
+            duration = (datetime.datetime.combine(datetime.date.min, reservation.endTime) -
+                        datetime.datetime.combine(datetime.date.min, reservation.startTime)).total_seconds() / 3600
+            # Always convert both to Decimal explicitly
+            try:
+                duration_decimal = Decimal(str(duration))
+                # coach.rate may be float or Decimal, always convert to Decimal
+                rate_decimal = coach.rate
+                if not isinstance(rate_decimal, Decimal):
+                    rate_decimal = Decimal(str(rate_decimal))
+                reservation.total_price = duration_decimal * rate_decimal
+            except Exception as e:
+                reservation.total_price = Decimal('0.00')
+        else:
+            reservation.total_price = Decimal('0.00')
+
         if commit:
-            user.save()
-        return user
+            reservation.save()
+        return reservation
 

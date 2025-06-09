@@ -1,18 +1,24 @@
+{% extends 'base.html' %}
 {% load static %}
 {% load form_filters %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Book a Court</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body class="bg-light">
-
-    <div class="container py-4">
-        <h1 class="mb-4">Book a Session</h1>
+{% block content %}
+<div class="container py-4">
+    <div class="card mb-4">
+        <div class="card-body bg-primary text-white rounded">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-calendar-alt me-2"></i>Book a Court</h1>
+                    <p class="lead mb-0">Book your court and optionally select a coach</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{% url 'client' %}" class="btn btn-light">
+                        <i class="fas fa-user me-2"></i>My Bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
         
         <div class="row">
             <div class="col-md-8">
@@ -54,17 +60,102 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            
-                            <div class="mb-3">
+                              <div class="mb-3">
                                 <label for="coachSelect" class="form-label">Coach (Optional)</label>
                                 <select class="form-select" id="coachSelect" name="coach">
                                     <option value="">No coach</option>
-                                    {% for coach in coaches %}
-                                    <option value="{{ coach.id }}" data-rate="{{ coach.rate }}">
-                                        {{ coach.get_full_name }} (${{ coach.rate }}/h)
+                                    {% for coach in coaches %}                                    <option value="{{ coach.id }}" data-rate="{{ coach.rate }}">
+                                        {{ coach.get_full_name|default:coach.username }} - ${{ coach.rate }}/h
                                     </option>
                                     {% endfor %}
                                 </select>
+                                <div class="form-text">Select a coach to view their detailed availability</div>
+                            </div>
+                            
+                            <!-- Coach details section -->
+                            <div id="coachDetailsSection" class="card mb-3 border-primary" style="display: none;">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Coach Details</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h5 id="coachName" class="mb-2"></h5>
+                                    <p><strong>Rate:</strong> <span id="coachRate"></span></p>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="me-2">
+                                            <span class="badge bg-info" id="availabilityBadge"></span>
+                                        </div>
+                                        <div>
+                                            <span id="coachAvailability"></span>
+                                        </div>
+                                    </div>
+                                    <div id="coachAvailabilityChart" class="mt-2">
+                                        <div class="d-flex text-center small">
+                                            <div class="flex-grow-1">M</div>
+                                            <div class="flex-grow-1">T</div>
+                                            <div class="flex-grow-1">W</div>
+                                            <div class="flex-grow-1">T</div>
+                                            <div class="flex-grow-1">F</div>
+                                            <div class="flex-grow-1">S</div>
+                                            <div class="flex-grow-1">S</div>
+                                        </div>
+                                        <div class="d-flex mt-1" id="availabilityDots">
+                                            <!-- Will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="coach-expertise">
+                                        <h6><i class="fas fa-medal me-2"></i>Expertise</h6>
+                                        <div class="d-flex flex-wrap mb-2">
+                                            <span class="badge bg-secondary me-1 mb-1">Tennis</span>
+                                            <span class="badge bg-secondary me-1 mb-1">Fitness</span>
+                                            <span class="badge bg-secondary me-1 mb-1">Training</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary w-100 mt-1" type="button" 
+                                           data-bs-toggle="modal" data-bs-target="#coachProfileModal">
+                                        <i class="fas fa-user me-1"></i> View Full Profile
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Coach Profile Modal -->
+                            <div class="modal fade" id="coachProfileModal" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title" id="modalCoachName">Coach Profile</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="text-center mb-3">
+                                                <div class="avatar rounded-circle bg-secondary text-white mx-auto mb-2" style="width: 80px; height: 80px; font-size: 40px; line-height: 80px;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <h4 id="modalCoachFullName"></h4>
+                                                <p class="text-muted">Tennis Coach</p>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <h5><i class="fas fa-dollar-sign me-2"></i>Rate</h5>
+                                                <p id="modalCoachRate" class="ps-4">$120/hour</p>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <h5><i class="fas fa-calendar-alt me-2"></i>Availability</h5>
+                                                <p id="modalCoachAvailability" class="ps-4"></p>
+                                                <div id="modalAvailabilityChart" class="ps-4"></div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <h5><i class="fas fa-medal me-2"></i>Expertise</h5>
+                                                <p class="ps-4">Professional tennis player with 5+ years of coaching experience. Specialized in technique improvement and match strategy.</p>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -77,6 +168,10 @@
                                 <label class="form-label">Total Price</label>
                                 <div class="form-control" id="priceDisplay">$0.00</div>
                             </div>
+                              <!-- Hidden fields for form submission -->
+                            <input type="hidden" name="startTime" id="startTimeField">
+                            <input type="hidden" name="endTime" id="endTimeField">
+                            <input type="hidden" name="payment_method" value="Cash">
                             
                             <button type="submit" class="btn btn-primary w-100" id="bookButton" disabled>
                                 <i class="fas fa-calendar-check me-2"></i> Book Now
@@ -120,12 +215,15 @@
                     calendar.unselect();
                     return;
                 }
-                
-                document.getElementById('selectedDate').value = start.toISOString().split('T')[0];
+                  document.getElementById('selectedDate').value = start.toISOString().split('T')[0];
                 document.getElementById('selectedStartTime').value = start.toTimeString().substring(0, 5);
                 document.getElementById('selectedEndTime').value = end.toTimeString().substring(0, 5);
                 document.getElementById('durationInput').value = duration;
                 document.getElementById('durationDisplay').textContent = `${duration} hours`;
+                
+                // Update the form fields for submission
+                document.getElementById('startTimeField').value = start.toTimeString().substring(0, 5);
+                document.getElementById('endTimeField').value = end.toTimeString().substring(0, 5);
                 
                 updatePrice();
                 checkAvailability();
@@ -138,20 +236,28 @@
                 `;
                 
                 calendar.unselect();
-            },
-            events: function(fetchInfo, successCallback, failureCallback) {
+            },            events: function(fetchInfo, successCallback, failureCallback) {
                 const courtId = document.getElementById('courtSelect').value;
                 const coachId = document.getElementById('coachSelect').value;
-                
-                if (!courtId && !coachId) {
+                  if (!courtId && !coachId) {
                     successCallback([]);
                     return;
                 }
                 
-                fetch(`/api/availability/?court_id=${courtId}&coach_id=${coachId}&start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`)
+                let url = '{% url "availability_api" %}?';
+                if (courtId) url += `court_id=${courtId}&`;
+                if (coachId) url += `coach_id=${coachId}`;
+                url += `&start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`;
+                
+                fetch(url)
                     .then(response => response.json())
-                    .then(data => successCallback(data))
-                    .catch(error => failureCallback(error));
+                    .then(data => {
+                        successCallback(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching events:', error);
+                        failureCallback(error);
+                    });
             }
         });
         
@@ -161,10 +267,81 @@
         document.getElementById('courtSelect').addEventListener('change', function() {
             calendar.refetchEvents();
             checkAvailability();
-        });
-        
-        document.getElementById('coachSelect').addEventListener('change', function() {
+        });          document.getElementById('coachSelect').addEventListener('change', function() {
             calendar.refetchEvents();
+            
+            const coachId = this.value;
+            const coachDetailsSection = document.getElementById('coachDetailsSection');
+            
+            if (coachId) {
+                // Show coach details section
+                coachDetailsSection.style.display = 'block';
+                
+                // Update coach profile data
+                updateCoachProfile(coachId);
+                
+                // Create availability dots for the week
+                const availabilityDots = document.getElementById('availabilityDots');
+                availabilityDots.innerHTML = '';
+                
+                // Get the current date and day of week
+                const today = new Date();
+                const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+                
+                // Reorder days to start with Monday (0 = Monday, ... 6 = Sunday)
+                const daysFromToday = [
+                    (0 + 7 - currentDay) % 7, // Monday
+                    (1 + 7 - currentDay) % 7, // Tuesday
+                    (2 + 7 - currentDay) % 7, // Wednesday
+                    (3 + 7 - currentDay) % 7, // Thursday
+                    (4 + 7 - currentDay) % 7, // Friday
+                    (5 + 7 - currentDay) % 7, // Saturday
+                    (6 + 7 - currentDay) % 7, // Sunday
+                ];
+                
+                // Fetch coach's weekly availability pattern
+                fetch(`{% url 'availability_api' %}?coach_id=${coachId}`)
+                    .then(response => response.json())
+                    .then(events => {
+                        // Create availability markers for each day
+                        for (let i = 0; i < 7; i++) {
+                            const dayEl = document.createElement('div');
+                            dayEl.className = 'flex-grow-1 text-center';
+                            
+                            // Create availability dot
+                            const dotEl = document.createElement('div');
+                            dotEl.className = 'mx-auto rounded-circle';
+                            dotEl.style.width = '15px';
+                            dotEl.style.height = '15px';
+                            
+                            // Calculate the date for this day
+                            const date = new Date(today);
+                            date.setDate(today.getDate() + daysFromToday[i]);
+                            const dateStr = date.toISOString().split('T')[0];
+                            
+                            // Check if there are any available slots for this day
+                            const dayEvents = events.filter(event => 
+                                event.start.includes(dateStr) && 
+                                event.extendedProps.type === 'availability' &&
+                                event.extendedProps.coach_id.toString() === coachId
+                            );
+                            
+                            if (dayEvents.length > 0) {
+                                dotEl.style.backgroundColor = '#28a745';
+                                dotEl.title = `Available on ${date.toLocaleDateString()} (${dayEvents.length} slots)`;
+                            } else {
+                                dotEl.style.backgroundColor = '#dee2e6';
+                                dotEl.title = `No availability on ${date.toLocaleDateString()}`;
+                            }
+                            
+                            dayEl.appendChild(dotEl);
+                            availabilityDots.appendChild(dayEl);
+                        }
+                    });
+            } else {
+                coachDetailsSection.style.display = 'none';
+            }
+            
             updatePrice();
             checkAvailability();
         });
@@ -178,11 +355,200 @@
             document.getElementById('priceDisplay').textContent = `$${price}`;
         }
         
-        function checkAvailability() {
-            const hasDate = document.getElementById('selectedDate').value !== '';
-            const hasCourt = document.getElementById('courtSelect').value !== '';
+        // Function to update coach profile data
+        function updateCoachProfile(coachId) {
+            if (!coachId) return;
             
-            document.getElementById('bookButton').disabled = !(hasDate && hasCourt);
+            fetch(`{% url 'coach_details_api' coach_id=1 %}`.replace('1', coachId))
+                .then(response => response.json())
+                .then(data => {
+                    // Update coach details in sidebar
+                    document.getElementById('coachName').textContent = data.name;
+                    document.getElementById('coachRate').textContent = `$${data.rate.toFixed(2)}/hour`;
+                    document.getElementById('coachAvailability').textContent = data.availability_message;
+                    
+                    // Update availability badge
+                    const availabilityBadge = document.getElementById('availabilityBadge');
+                    if (data.available_slots > 5) {
+                        availabilityBadge.textContent = 'Highly Available';
+                        availabilityBadge.className = 'badge bg-success';
+                    } else if (data.available_slots > 2) {
+                        availabilityBadge.textContent = 'Moderately Available';
+                        availabilityBadge.className = 'badge bg-info';
+                    } else if (data.available_slots > 0) {
+                        availabilityBadge.textContent = 'Limited Availability';
+                        availabilityBadge.className = 'badge bg-warning text-dark';
+                    } else {
+                        availabilityBadge.textContent = 'No Availability';
+                        availabilityBadge.className = 'badge bg-danger';
+                    }
+                    
+                    // Update expertise badges
+                    if (data.expertise && data.expertise.length > 0) {
+                        const expertiseHTML = data.expertise.map(skill => 
+                            `<span class="badge bg-secondary me-1 mb-1">${skill}</span>`
+                        ).join('');
+                        document.querySelector('.coach-expertise .d-flex').innerHTML = expertiseHTML;
+                    }
+                    
+                    // Update modal data
+                    document.getElementById('modalCoachName').textContent = `${data.name}'s Profile`;
+                    document.getElementById('modalCoachFullName').textContent = data.name;
+                    document.getElementById('modalCoachRate').textContent = `$${data.rate.toFixed(2)}/hour`;
+                    document.getElementById('modalCoachAvailability').textContent = data.availability_message;
+                    
+                    // Create weekly availability chart in modal
+                    if (data.daily_availability && data.daily_availability.length > 0) {
+                        const chartHTML = `
+                            <div class="availability-chart mt-2">
+                                ${data.daily_availability.map(day => `
+                                    <div class="d-flex align-items-center mb-1">
+                                        <div style="width: 40px; font-weight: 500;">${day.day}</div>
+                                        <div class="progress flex-grow-1" style="height: 10px;">
+                                            <div class="progress-bar ${day.has_availability ? 'bg-success' : 'bg-light'}" 
+                                                 role="progressbar" 
+                                                 style="width: ${Math.min(day.available_hours * 10, 100)}%" 
+                                                 title="${day.has_availability ? `${day.available_hours} hours available` : 'Not available'}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        document.getElementById('modalAvailabilityChart').innerHTML = chartHTML;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching coach details:', error);
+                });
+        }
+          // Function to check availability of courts and coaches
+        function checkAvailability() {
+            const date = document.getElementById('selectedDate').value;
+            const startTime = document.getElementById('selectedStartTime').value;
+            const endTime = document.getElementById('selectedEndTime').value;
+            const courtId = document.getElementById('courtSelect').value;
+            const coachId = document.getElementById('coachSelect').value;
+            
+            // Basic validation
+            const hasSelection = date !== '' && courtId !== '';
+            document.getElementById('bookButton').disabled = !hasSelection;
+            
+            if (hasSelection) {
+                // Check if the selected time slot is available (for both court and coach if selected)
+                const url = `{% url 'availability_api' %}?date=${date}&start=${startTime}&end=${endTime}&court_id=${courtId}${coachId ? '&coach_id='+coachId : ''}`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(events => {
+                        // Check for conflicts (events that overlap with our selected time)
+                        const courtConflicts = events.filter(event => {
+                            const eventStart = new Date(`${date}T${event.start.split('T')[1]}`);
+                            const eventEnd = new Date(`${date}T${event.end.split('T')[1]}`);
+                            const selectedStart = new Date(`${date}T${startTime}:00`);
+                            const selectedEnd = new Date(`${date}T${endTime}:00`);
+                            
+                            return (eventStart < selectedEnd && eventEnd > selectedStart && 
+                                   event.extendedProps.type === 'booking' &&
+                                   event.extendedProps.conflict !== 'coach_not_available');
+                        });
+                        
+                        // Check for coach availability conflicts
+                        const coachConflicts = events.filter(event => 
+                            event.extendedProps.conflict === 'coach_not_available'
+                        );
+                        
+                        const bookButton = document.getElementById('bookButton');
+                        const selectedSlot = document.getElementById('selectedSlot');
+                        
+                        if (courtConflicts.length > 0 || coachConflicts.length > 0) {
+                            // There are conflicts, cannot book this slot
+                            bookButton.disabled = true;
+                            selectedSlot.classList.remove('alert-info');
+                            selectedSlot.classList.add('alert-danger');
+                            
+                            // Determine the right error message
+                            let errorMessage = 'This time slot is not available. Please select another time.';
+                            
+                            if (coachConflicts.length > 0 && courtConflicts.length === 0) {
+                                errorMessage = 'The selected coach is not available during this time. Please select another time or a different coach.';
+                                
+                                // Get coach name for more specific message
+                                const coachSelect = document.getElementById('coachSelect');
+                                const coachName = coachSelect.options[coachSelect.selectedIndex].text.split(' - ')[0];
+                                errorMessage = `${coachName} is not available during this time. Please select another time or a different coach.`;
+                                
+                                // If we have coach details, fetch their next available slots
+                                if (coachId) {
+                                    const nextAvailUrl = `{% url 'availability_api' %}?coach_id=${coachId}&date=${date}`;
+                                    fetch(nextAvailUrl)
+                                        .then(response => response.json())
+                                        .then(availEvents => {
+                                            // Filter events for this specific day and coach's availability
+                                            const availabilitySlots = availEvents.filter(event => 
+                                                event.start.includes(date) && 
+                                                event.extendedProps.type === 'availability'
+                                            );
+                                            
+                                            if (availabilitySlots.length > 0) {
+                                                // Format the available times
+                                                const availableTimes = availabilitySlots.map(slot => {
+                                                    const slotStart = slot.start.split('T')[1].substring(0, 5);
+                                                    const slotEnd = slot.end.split('T')[1].substring(0, 5);
+                                                    return `${slotStart} - ${slotEnd}`;
+                                                });
+                                                
+                                                // Add alternative times to the error message
+                                                const availableMessage = `<div class="mt-2">Available times today: ${availableTimes.join(', ')}</div>`;
+                                                selectedSlot.innerHTML += availableMessage;
+                                            }
+                                        });
+                                }
+                            } else if (courtConflicts.length > 0) {
+                                errorMessage = `Court ${courtId} is already booked during this time. Please select another time or court.`;
+                            }
+                            
+                            // Add the conflict message
+                            const currentText = selectedSlot.innerHTML.split('<div class="text-danger mt-2">')[0];
+                            selectedSlot.innerHTML = currentText + 
+                                `<div class="text-danger mt-2"><i class="fas fa-exclamation-circle"></i> ${errorMessage}</div>`;
+                        } else {
+                            // No conflicts, can book
+                            bookButton.disabled = false;
+                            selectedSlot.classList.remove('alert-danger');
+                            selectedSlot.classList.add('alert-info');
+                            
+                            // Remove any conflict message
+                            const currentText = selectedSlot.innerHTML;
+                            if (currentText.includes('text-danger mt-2')) {
+                                selectedSlot.innerHTML = currentText.split('<div class="text-danger mt-2">')[0];
+                            }
+                            
+                            // If a coach is selected, add confirmation of their availability
+                            if (coachId) {
+                                const coachSelect = document.getElementById('coachSelect');
+                                const coachName = coachSelect.options[coachSelect.selectedIndex].text.split(' - ')[0];
+                                
+                                // Add coach availability confirmation
+                                if (!selectedSlot.innerHTML.includes('coach-availability-confirm')) {
+                                    selectedSlot.innerHTML += `<div class="text-success mt-2 coach-availability-confirm">
+                                        <i class="fas fa-check-circle"></i> ${coachName} is available for this timeslot
+                                    </div>`;
+                                }
+                            } else {
+                                // Remove coach availability message if no coach is selected
+                                const confirmText = selectedSlot.innerHTML;
+                                if (confirmText.includes('coach-availability-confirm')) {
+                                    selectedSlot.innerHTML = confirmText.split('<div class="text-success mt-2 coach-availability-confirm">')[0];
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking availability:', error);
+                    });
+            }
         }
     });
     </script>
+{% endblock %}

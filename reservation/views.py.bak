@@ -9,7 +9,16 @@ from django.utils import timezone
 from datetime import timedelta, datetime, time
 from django.http import JsonResponse
 from django.contrib import messages
-from decimal import Decimal
+            self.add_error('day_of_week', 'Day of week is required for recurring availability')
+        
+        if not is_recurring and not date:
+            self.add_error('date', 'Date is required for one-time availability')
+            
+        # Validate time range
+        if start_time and end_time and start_time >= end_time:
+            self.add_error('end_time', 'End time must be after start time')
+            
+        return cleaned_data
 
 @login_required
 def coach_dashboard(request):
@@ -67,7 +76,6 @@ def coach_sessions(request):
     return render(request, 'coachsessions.html', {'sessions': sessions})
 
 @login_required
-@login_required
 def coach_students(request):
     if not request.user.isCoach:
         return redirect('client')
@@ -78,21 +86,7 @@ def coach_students(request):
     ).values_list('user', flat=True).distinct()
     students = User.objects.filter(id__in=student_ids)
     
-    # Get session counts for each student
-    student_data = []
-    for student in students:
-        sessions = Reservation.objects.filter(coach=request.user, user=student)
-        student_data.append({
-            'student': student,
-            'session_count': sessions.count(),
-            'last_session': sessions.order_by('-date').first() if sessions.exists() else None,
-            'total_spent': sum(session.total_price for session in sessions)
-        })
-    
-    return render(request, 'coach_students.html', {
-        'students': student_data,
-        'total_students': len(student_data)
-    })
+    return render(request, 'coach_students.html', {'students': students})
 
 @login_required
 def session_detail(request, session_id):
@@ -152,101 +146,28 @@ def logoutPage(request):
 @login_required
 def bookingPage(request, court_id=None):
     if request.method == 'POST':
-        # Handle the booking submission directly without using the form class
-        try:
-            # Get form data
-            date_str = request.POST.get('date')
-            start_time_str = request.POST.get('startTime')
-            end_time_str = request.POST.get('endTime')
-            court_id = request.POST.get('court')
-            coach_id = request.POST.get('coach')
-            payment_method = request.POST.get('payment_method', 'Cash')
+        form = BookingForm(request.POST, user=request.user)
+        if form.is_valid():
+            reservation = form.save(commit=False)
+            reservation.user = request.user
             
-            # Parse and validate the data
-            if not all([date_str, start_time_str, end_time_str, court_id]):
-                messages.error(request, "Please fill in all required fields.")
-                return redirect('booking')
-                
-            date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            start_time = datetime.strptime(start_time_str, '%H:%M').time()
-            end_time = datetime.strptime(end_time_str, '%H:%M').time()
-            court = get_object_or_404(Court, id=court_id)
-            coach = None
-            if coach_id:
-                coach = get_object_or_404(User, id=coach_id, isCoach=True)
+            # Calculate price
+            coach = form.cleaned_data.get('coach')
+            duration = (datetime.combine(reservation.date, reservation.endTime) - 
+                       datetime.combine(reservation.date, reservation.startTime)).total_seconds() / 3600
+            reservation.total_price = duration * (coach.rate if coach else 60)  # Default rate
             
-            # Check for conflicts
-            conflicts = Reservation.objects.filter(
-                court=court,
-                date=date,
-                startTime__lt=end_time,
-                endTime__gt=start_time
-            )
-            
-            if conflicts.exists():
-                messages.error(request, "This court is already booked during the selected time.")
-                return redirect('booking')
-            
-            # Check coach availability if coach is selected
-            if coach:
-                # Verify coach set availability rules
-                availabilities = CoachAvailability.objects.filter(coach=coach)
-                has_slot = any(slot.is_available(date, start_time, end_time) for slot in availabilities)
-                if not has_slot:
-                    messages.error(request, "The selected coach has not set availability for this time. Please choose another time or coach.")
-                    return redirect('booking')
-
-                coach_conflicts = Reservation.objects.filter(
-                    coach=coach,
-                    date=date,
-                    startTime__lt=end_time,
-                    endTime__gt=start_time
-                )
-                
-                if coach_conflicts.exists():
-                    messages.error(request, f"{coach.get_full_name()} is already booked during this time.")
-                    return redirect('booking')
-            
-            # Calculate duration and price
-            duration_timedelta = datetime.combine(date, end_time) - datetime.combine(date, start_time)
-            duration_hours = duration_timedelta.total_seconds() / 3600
-            
-            # Calculate total price
-            court_rate = Decimal('60.00')  # Default court rate per hour
-            if coach:
-                coach_rate = Decimal(str(coach.rate))
-            else:
-                coach_rate = Decimal('0.00')
-            total_price = Decimal(str(duration_hours)) * (court_rate + coach_rate)
-            
-            # Create the reservation
-            reservation = Reservation.objects.create(
-                user=request.user,
-                date=date,
-                startTime=start_time,
-                endTime=end_time,
-                court=court,
-                coach=coach,
-                total_price=total_price,
-                isPaid=False
-            )
-            
-            coach_msg = f" with {coach.get_full_name()}" if coach else ""
-            messages.success(request, f"Court {court.id} booked successfully for {date.strftime('%B %d, %Y')} from {start_time.strftime('%H:%M')} to {end_time.strftime('%H:%M')}{coach_msg}!")
-            return redirect('client')
-            
-        except Exception as e:
-            messages.error(request, f"Error creating reservation: {str(e)}")
-            return redirect('booking')
+            reservation.save()
+            messages.success(request, "Reservation created successfully!")
+            return redirect('client_dashboard')
+    else:
+        form = BookingForm(user=request.user)
+        if court_id:
+            form.fields['court'].initial = court_id
     
-    # GET request - show the booking form
-    form = BookingForm(user=request.user)
-    if court_id:
-        form.fields['court'].initial = court_id
-    
-    # Get available courts and coaches (excluding current user if they're a coach)
+    # Get available courts and coaches
     courts = Court.objects.all()
-    coaches = User.objects.filter(isCoach=True).exclude(id=request.user.id)
+    coaches = User.objects.filter(isCoach=True)
     
     return render(request, 'booking.html', {
         'form': form,
@@ -258,52 +179,14 @@ def availability_api(request):
     """API endpoint for checking court and coach availability"""
     coach_id = request.GET.get('coach_id')
     court_id = request.GET.get('court_id')
-    date_str = request.GET.get('date')
-    start_time_str = request.GET.get('start')
-    end_time_str = request.GET.get('end')
+    date = request.GET.get('date')
     
     events = []
-    
-    # If we have specific date and times, we're checking a specific slot's availability
-    specific_check = date_str and start_time_str and end_time_str
     
     if coach_id:
         try:
             coach = User.objects.get(id=coach_id, isCoach=True)
-            
-            if specific_check:
-                # Convert strings to date/time objects
-                check_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                check_start = datetime.strptime(start_time_str, '%H:%M').time()
-                check_end = datetime.strptime(end_time_str, '%H:%M').time()
-                
-                # Get all availability slots that overlap with this timeframe
-                availabilities = coach.coachavailability_set.all()
-                
-                # Check if coach is available during this slot
-                is_available = False
-                
-                for avail in availabilities:
-                    if avail.is_available(check_date, check_start, check_end):
-                        is_available = True
-                        break
-                
-                # If coach isn't available and has any availability set, return conflict events
-                if not is_available and availabilities.exists():
-                    # Create a conflict event
-                    events.append({
-                        'title': 'Coach Not Available',
-                        'start': f"{date_str}T{start_time_str}:00",
-                        'end': f"{date_str}T{end_time_str}:00",
-                        'color': '#dc3545',  # Red
-                        'extendedProps': {
-                            'type': 'booking',  # Mark as conflict
-                            'conflict': 'coach_not_available'
-                        }
-                    })
-            else:
-                # Get full availability schedule (for calendar display)
-                events.extend(coach.get_availability_schedule())
+            events.extend(coach.get_availability_schedule())
         except User.DoesNotExist:
             pass
     
@@ -345,12 +228,6 @@ def coach_availability(request):
         if form.is_valid():
             availability = form.save(commit=False)
             availability.coach = request.user
-            
-            # For recurring slots, we need to set a date value (required by the model)
-            # We'll use today's date as a placeholder since it's the day_of_week that matters
-            if availability.is_recurring and not availability.date:
-                availability.date = timezone.now().date()
-                
             availability.save()
             messages.success(request, "Availability slot added successfully!")
             return redirect('coach_availability')
@@ -432,56 +309,13 @@ def coach_details_api(request, coach_id):
         else:
             availability_message = "No availability set for this week."
             
-        # Get daily availability breakdown
-        daily_availability = []
-        for day_offset in range(7):
-            check_date = today + timedelta(days=day_offset)
-            day_name = check_date.strftime('%a')  # Mon, Tue, Wed, etc.
-            
-            # Check recurring slots for this weekday
-            recurring_slots = CoachAvailability.objects.filter(
-                coach=coach, 
-                is_recurring=True,
-                day_of_week=check_date.weekday()
-            )
-            
-            # Check one-time slots for this date
-            onetime_slots = CoachAvailability.objects.filter(
-                coach=coach,
-                is_recurring=False,
-                date=check_date
-            )
-            
-            # Total available hours for this day
-            total_hours = 0
-            for slot in list(recurring_slots) + list(onetime_slots):
-                slot_duration = (
-                    datetime.combine(check_date, slot.end_time) - 
-                    datetime.combine(check_date, slot.start_time)
-                ).total_seconds() / 3600
-                total_hours += slot_duration
-                
-            daily_availability.append({
-                'day': day_name,
-                'date': check_date.strftime('%Y-%m-%d'),
-                'available_hours': round(total_hours, 1),
-                'has_availability': total_hours > 0
-            })
-        
-        # Mock expertise fields (in a real app, you'd store these in the database)
-        expertise = ['Tennis', 'Fitness', 'Training']
-        experience = "Professional tennis player with 5+ years of coaching experience."
-            
         response_data = {
             'id': coach.id,
             'name': coach.get_full_name() or coach.username,
             'rate': float(coach.rate),
             'available_slots': total_availability,
             'booked_slots': booked_count,
-            'availability_message': availability_message,
-            'daily_availability': daily_availability,
-            'expertise': expertise,
-            'experience': experience
+            'availability_message': availability_message
         }
         
         return JsonResponse(response_data)
