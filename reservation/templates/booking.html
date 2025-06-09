@@ -345,14 +345,20 @@
             updatePrice();
             checkAvailability();
         });
-        
-        function updatePrice() {
+          function updatePrice() {
             const coachSelect = document.getElementById('coachSelect');
             const duration = parseFloat(document.getElementById('durationInput').value);
-            const rate = coachSelect.selectedOptions[0]?.dataset.rate || 0;
-            const price = (duration * rate).toFixed(2);
             
-            document.getElementById('priceDisplay').textContent = `$${price}`;
+            // Check if a coach is selected
+            if (coachSelect.value) {
+                // If coach is selected, multiply rate by duration
+                const rate = coachSelect.selectedOptions[0]?.dataset.rate || 0;
+                const price = (duration * rate).toFixed(2);
+                document.getElementById('priceDisplay').textContent = `$${price}`;
+            } else {
+                // If no coach is selected, show the flat $100 price
+                document.getElementById('priceDisplay').textContent = `$100.00`;
+            }
         }
         
         // Function to update coach profile data

@@ -210,14 +210,14 @@ def bookingPage(request, court_id=None):
             # Calculate duration and price
             duration_timedelta = datetime.combine(date, end_time) - datetime.combine(date, start_time)
             duration_hours = duration_timedelta.total_seconds() / 3600
-            
-            # Calculate total price
+              # Calculate total price
             court_rate = Decimal('60.00')  # Default court rate per hour
             if coach:
                 coach_rate = Decimal(str(coach.rate))
+                total_price = Decimal(str(duration_hours)) * (court_rate + coach_rate)
             else:
-                coach_rate = Decimal('0.00')
-            total_price = Decimal(str(duration_hours)) * (court_rate + coach_rate)
+                # Set price to 100 when no coach is selected
+                total_price = Decimal('100.00')
             
             # Create the reservation
             reservation = Reservation.objects.create(

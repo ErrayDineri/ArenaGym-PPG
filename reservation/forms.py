@@ -201,11 +201,10 @@ class BookingForm(forms.ModelForm):
                 coach=coach,
                 date=date,
                 startTime__lt=end_time,
-                endTime__gt=start_time            ).exists():
-                self.add_error('coach', 'The selected coach is already booked during this time.')
+                endTime__gt=start_time            ).exists():                self.add_error('coach', 'The selected coach is already booked during this time.')
 
         return cleaned_data
-
+        
     def save(self, commit=True):
         reservation = super().save(commit=False)
         reservation.startTime = self.cleaned_data.get('startTime')
@@ -226,7 +225,8 @@ class BookingForm(forms.ModelForm):
             except Exception as e:
                 reservation.total_price = Decimal('0.00')
         else:
-            reservation.total_price = Decimal('0.00')
+            # Set price to 100 when no coach is selected
+            reservation.total_price = Decimal('100.00')
 
         if commit:
             reservation.save()
