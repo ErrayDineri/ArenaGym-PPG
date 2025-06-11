@@ -45,10 +45,7 @@
                                 <label class="form-label">Selected Slot:</label>
                                 <div id="selectedSlot" class="alert alert-info">
                                     Please select a time slot on the calendar
-                                </div>
-                                <input type="hidden" name="date" id="selectedDate">
-                                <input type="hidden" name="start_time" id="selectedStartTime">
-                                <input type="hidden" name="end_time" id="selectedEndTime">
+                                </div>                                <input type="hidden" name="date" id="selectedDate">
                             </div>
                             
                             <div class="mb-3">
@@ -214,10 +211,7 @@
                     alert('Please select a time slot between 30 minutes and 3 hours');
                     calendar.unselect();
                     return;
-                }
-                  document.getElementById('selectedDate').value = start.toISOString().split('T')[0];
-                document.getElementById('selectedStartTime').value = start.toTimeString().substring(0, 5);
-                document.getElementById('selectedEndTime').value = end.toTimeString().substring(0, 5);
+                }                  document.getElementById('selectedDate').value = start.toISOString().split('T')[0];
                 document.getElementById('durationInput').value = duration;
                 document.getElementById('durationDisplay').textContent = `${duration} hours`;
                 
@@ -425,14 +419,14 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching coach details:', error);
-                });
+                    console.error('Error fetching coach details:', error);                });
         }
-          // Function to check availability of courts and coaches
+        
+        // Function to check availability of courts and coaches
         function checkAvailability() {
             const date = document.getElementById('selectedDate').value;
-            const startTime = document.getElementById('selectedStartTime').value;
-            const endTime = document.getElementById('selectedEndTime').value;
+            const startTime = document.getElementById('startTimeField').value;
+            const endTime = document.getElementById('endTimeField').value;
             const courtId = document.getElementById('courtSelect').value;
             const coachId = document.getElementById('coachSelect').value;
             
@@ -446,11 +440,10 @@
                 
                 fetch(url)
                     .then(response => response.json())
-                    .then(events => {
-                        // Check for conflicts (events that overlap with our selected time)
+                    .then(events => {                        // Check for conflicts (events that overlap with our selected time)
                         const courtConflicts = events.filter(event => {
-                            const eventStart = new Date(`${date}T${event.start.split('T')[1]}`);
-                            const eventEnd = new Date(`${date}T${event.end.split('T')[1]}`);
+                            const eventStart = new Date(event.start);
+                            const eventEnd = new Date(event.end);
                             const selectedStart = new Date(`${date}T${startTime}:00`);
                             const selectedEnd = new Date(`${date}T${endTime}:00`);
                             

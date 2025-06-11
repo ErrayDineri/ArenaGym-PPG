@@ -66,7 +66,7 @@ def coach_sessions(request):
     
     return render(request, 'coachsessions.html', {'sessions': sessions})
 
-@login_required
+
 @login_required
 def coach_students(request):
     if not request.user.isCoach:
@@ -174,14 +174,18 @@ def bookingPage(request, court_id=None):
             coach = None
             if coach_id:
                 coach = get_object_or_404(User, id=coach_id, isCoach=True)
-            
-            # Check for conflicts
+              # Check for conflicts
+            print(f"DEBUG VIEW: Checking court {court} for date {date}, time {start_time}-{end_time}")
             conflicts = Reservation.objects.filter(
                 court=court,
                 date=date,
                 startTime__lt=end_time,
                 endTime__gt=start_time
             )
+            
+            print(f"DEBUG VIEW: Found {conflicts.count()} conflicts")
+            for conflict in conflicts:
+                print(f"DEBUG VIEW: Conflict - Date: {conflict.date}, Time: {conflict.startTime}-{conflict.endTime}, User: {conflict.user.username}")
             
             if conflicts.exists():
                 messages.error(request, "This court is already booked during the selected time.")

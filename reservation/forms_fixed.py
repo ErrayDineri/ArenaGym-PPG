@@ -171,31 +171,20 @@ class BookingForm(forms.ModelForm):
                 end_time = slot_end
                 break
         else:
-            raise forms.ValidationError("Invalid time slot selected.")        # Add the times to cleaned_data
+            raise forms.ValidationError("Invalid time slot selected.")
+
+        # Add the times to cleaned_data
         cleaned_data['startTime'] = start_time
         cleaned_data['endTime'] = end_time
         
-        # Debug information - you can remove this later
-        print(f"DEBUG: Checking court {court} for date {date}, time {start_time}-{end_time}")
-        
         # Check if the court is already reserved during the chosen time (with both date and time)
-        conflicting_reservations = Reservation.objects.filter(
+        if Reservation.objects.filter(
             court=court,
             date=date,
             startTime__lt=end_time,
             endTime__gt=start_time
-        )
-        
-        if conflicting_reservations.exists():
-            # Add detailed debugging information
-            conflict_details = []
-            for reservation in conflicting_reservations:
-                conflict_details.append(
-                    f"Date: {reservation.date}, Time: {reservation.startTime}-{reservation.endTime}, User: {reservation.user.username}"
-                )
-            
-            error_message = f'The selected court is already reserved during this time. Conflicts found: {"; ".join(conflict_details)}'
-            self.add_error('court', error_message)
+        ).exists():
+            self.add_error('court', 'The selected court is already reserved during this time.')
             
         # Check if the coach is available during the chosen time
         if coach:
