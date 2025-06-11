@@ -195,12 +195,15 @@
                 left: 'prev,next today',
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            slotMinTime: '08:00:00',
+            },            slotMinTime: '08:00:00',
             slotMaxTime: '22:00:00',
             slotDuration: '00:30:00',
             selectable: true,
             selectMirror: true,
+            eventOverlap: true,  // Allow selecting over events
+            selectOverlap: true, // Allow time selection to overlap with events
+            eventStartEditable: false,
+            eventDurationEditable: false,
             select: function(info) {
                 // Handle time slot selection
                 const start = info.start;
@@ -242,11 +245,21 @@
                 if (courtId) url += `court_id=${courtId}&`;
                 if (coachId) url += `coach_id=${coachId}`;
                 url += `&start=${fetchInfo.startStr}&end=${fetchInfo.endStr}`;
-                
-                fetch(url)
+                  fetch(url)
                     .then(response => response.json())
                     .then(data => {
-                        successCallback(data);
+                        // Make availability events semi-transparent and non-blocking
+                        const processedData = data.map(event => {
+                            if (event.extendedProps.type === 'availability') {
+                                return {
+                                    ...event,
+                                    display: 'background',  // Display as background event
+                                    color: 'rgba(40, 167, 69, 0.3)',  // Semi-transparent green
+                                }
+                            }
+                            return event;
+                        });
+                        successCallback(processedData);
                     })
                     .catch(error => {
                         console.error('Error fetching events:', error);
@@ -338,19 +351,21 @@
             
             updatePrice();
             checkAvailability();
-        });
-          function updatePrice() {
+        });        function updatePrice() {
             const coachSelect = document.getElementById('coachSelect');
             const duration = parseFloat(document.getElementById('durationInput').value);
             
+            // Court rate per hour (matches backend calculation)
+            const courtRate = 60.00;
+            
             // Check if a coach is selected
             if (coachSelect.value) {
-                // If coach is selected, multiply rate by duration
-                const rate = coachSelect.selectedOptions[0]?.dataset.rate || 0;
-                const price = (duration * rate).toFixed(2);
+                // If coach is selected, multiply (court_rate + coach_rate) by duration
+                const coachRate = parseFloat(coachSelect.selectedOptions[0]?.dataset.rate || 0);
+                const price = (duration * (courtRate + coachRate)).toFixed(2);
                 document.getElementById('priceDisplay').textContent = `$${price}`;
             } else {
-                // If no coach is selected, show the flat $100 price
+                // If no coach is selected, show the flat $100 price (matches backend)
                 document.getElementById('priceDisplay').textContent = `$100.00`;
             }
         }

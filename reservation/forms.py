@@ -217,8 +217,7 @@ class BookingForm(forms.ModelForm):
                 coach=coach,
                 date=date,
                 startTime__lt=end_time,
-                endTime__gt=start_time
-            ).exists():
+                endTime__gt=start_time            ).exists():
                 self.add_error('coach', 'The selected coach is already booked during this time.')
 
         return cleaned_data
@@ -235,15 +234,18 @@ class BookingForm(forms.ModelForm):
             # Always convert both to Decimal explicitly
             try:
                 duration_decimal = Decimal(str(duration))
-                # coach.rate may be float or Decimal, always convert to Decimal
-                rate_decimal = coach.rate
-                if not isinstance(rate_decimal, Decimal):
-                    rate_decimal = Decimal(str(rate_decimal))
-                reservation.total_price = duration_decimal * rate_decimal
+                # Court rate per hour (should match views.py)
+                court_rate = Decimal('60.00')
+                # Coach rate
+                coach_rate = coach.rate
+                if not isinstance(coach_rate, Decimal):
+                    coach_rate = Decimal(str(coach_rate))
+                # Total = (court_rate + coach_rate) * duration
+                reservation.total_price = duration_decimal * (court_rate + coach_rate)
             except Exception as e:
                 reservation.total_price = Decimal('0.00')
         else:
-            # Set price to 100 when no coach is selected
+            # Set price to 100 when no coach is selected (should match views.py)
             reservation.total_price = Decimal('100.00')
 
         if commit:

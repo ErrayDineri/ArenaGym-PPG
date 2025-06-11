@@ -279,22 +279,14 @@ def availability_api(request):
                 # Convert strings to date/time objects
                 check_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                 check_start = datetime.strptime(start_time_str, '%H:%M').time()
-                check_end = datetime.strptime(end_time_str, '%H:%M').time()
-                
-                # Get all availability slots that overlap with this timeframe
+                check_end = datetime.strptime(end_time_str, '%H:%M').time()                # Get all availability slots that overlap with this timeframe
                 availabilities = coach.coachavailability_set.all()
                 
                 # Check if coach is available during this slot
                 is_available = False
                 
-                for avail in availabilities:
-                    if avail.is_available(check_date, check_start, check_end):
-                        is_available = True
-                        break
-                
-                # If coach isn't available and has any availability set, return conflict events
-                if not is_available and availabilities.exists():
-                    # Create a conflict event
+                # If coach has no availability set at all, they're not available
+                if not availabilities.exists():
                     events.append({
                         'title': 'Coach Not Available',
                         'start': f"{date_str}T{start_time_str}:00",
@@ -305,6 +297,25 @@ def availability_api(request):
                             'conflict': 'coach_not_available'
                         }
                     })
+                else:
+                    for avail in availabilities:
+                        if avail.is_available(check_date, check_start, check_end):
+                            is_available = True
+                            break
+                    
+                    # If coach isn't available and has availability set, return conflict events
+                    if not is_available:
+                        # Create a conflict event
+                        events.append({
+                            'title': 'Coach Not Available',
+                            'start': f"{date_str}T{start_time_str}:00",
+                            'end': f"{date_str}T{end_time_str}:00",
+                            'color': '#dc3545',  # Red
+                            'extendedProps': {
+                                'type': 'booking',  # Mark as conflict
+                                'conflict': 'coach_not_available'
+                            }
+                        })
             else:
                 # Get full availability schedule (for calendar display)
                 events.extend(coach.get_availability_schedule())

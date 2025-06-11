@@ -15,21 +15,54 @@ class User(AbstractUser):
             
         events = []
         
+        # Import timezone here to avoid circular imports
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Define the range for recurring events (e.g., next 8 weeks)
+        today = timezone.now().date()
+        start_range = today - timedelta(days=7)  # Show past week too
+        end_range = today + timedelta(weeks=8)   # Show next 8 weeks
+        
         # Get all availability slots for the coach
         for availability in self.coachavailability_set.all():
-            events.append({
-                'title': f"Available - {self.get_full_name() or self.username}",
-                'start': f"{availability.date.isoformat()}T{availability.start_time.strftime('%H:%M:%S')}",
-                'end': f"{availability.date.isoformat()}T{availability.end_time.strftime('%H:%M:%S')}",
-                'color': '#28a745',  # Green for available
-                'extendedProps': {
-                    'type': 'availability',
-                    'availability_id': availability.id,
-                    'coach_id': self.id,
-                    'coach_name': self.get_full_name() or self.username,
-                    'coach_rate': str(self.rate)
-                }
-            })
+            if availability.is_recurring:
+                # Generate events for all matching weekdays in the range
+                current_date = start_range
+                while current_date <= end_range:
+                    # Check if this date matches the recurring day of week
+                    if current_date.weekday() == availability.day_of_week:
+                        events.append({
+                            'title': f"Available - {self.get_full_name() or self.username}",
+                            'start': f"{current_date.isoformat()}T{availability.start_time.strftime('%H:%M:%S')}",
+                            'end': f"{current_date.isoformat()}T{availability.end_time.strftime('%H:%M:%S')}",
+                            'color': '#28a745',  # Green for available
+                            'extendedProps': {
+                                'type': 'availability',
+                                'availability_id': availability.id,
+                                'coach_id': self.id,
+                                'coach_name': self.get_full_name() or self.username,
+                                'coach_rate': str(self.rate),
+                                'is_recurring': True
+                            }
+                        })
+                    current_date += timedelta(days=1)
+            else:
+                # One-time availability - only show for the specific date
+                events.append({
+                    'title': f"Available - {self.get_full_name() or self.username}",
+                    'start': f"{availability.date.isoformat()}T{availability.start_time.strftime('%H:%M:%S')}",
+                    'end': f"{availability.date.isoformat()}T{availability.end_time.strftime('%H:%M:%S')}",
+                    'color': '#28a745',  # Green for available
+                    'extendedProps': {
+                        'type': 'availability',
+                        'availability_id': availability.id,
+                        'coach_id': self.id,
+                        'coach_name': self.get_full_name() or self.username,
+                        'coach_rate': str(self.rate),
+                        'is_recurring': False
+                    }
+                })
         
         # Get all booked slots for the coach (to avoid double-booking)
         for reservation in self.coach.all():
